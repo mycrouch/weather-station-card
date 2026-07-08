@@ -15,7 +15,7 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.3.0";
+const VERSION = "1.3.1";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -41,12 +41,6 @@ const MDI = {
     "M3,15H13A1,1 0 0,1 14,16A1,1 0 0,1 13,17H3A1,1 0 0,1 2,16A1,1 0 0,1 3,15M16,15H21A1,1 0 0,1 22,16A1,1 0 0,1 21,17H16A1,1 0 0,1 15,16A1,1 0 0,1 16,15M1,12A5,5 0 0,1 6,7C7,4.65 9.3,3 12,3C15.43,3 18.24,5.66 18.5,9.03L19,9C21.19,9 23,10.81 23,13C23,13.7 22.82,14.36 22.5,14.94C22.24,14.67 21.9,14.5 21.5,14.5C21.24,14.5 21,14.58 20.79,14.71C20.93,14.19 21,13.6 20.79,13C20.5,12.11 19.66,11.44 18.68,11.06C18.44,10.97 18.19,11.05 18,11.24C17.66,11.24 17.35,11.36 17.11,11.56C16.83,10.94 16.24,10.5 15.5,10.5C15.24,10.5 15,10.58 14.79,10.71C14.5,9.82 13.66,9.15 12.68,8.77C12.44,8.68 12.19,8.76 12,8.95C11.66,8.95 11.35,9.07 11.11,9.27C10.83,8.65 10.24,8.21 9.5,8.21C8.83,8.21 8.24,8.59 7.93,9.16C7.62,9.06 7.31,9 7,9C5.6,9 4.44,9.96 4.1,11.25C2.87,11.61 2,12.7 2,14C2,14.7 2.24,15.34 2.63,15.86C2.24,16.11 2,16.53 2,17A1,1 0 0,0 3,18A1,1 0 0,0 4,17H3M3,19H15A1,1 0 0,1 16,20A1,1 0 0,1 15,21H3A1,1 0 0,1 2,20A1,1 0 0,1 3,19Z",
   "weather-night":
     "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95Z",
-  "emoticon-happy":
-    "M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M8.5,8A1.5,1.5 0 0,0 7,9.5A1.5,1.5 0 0,0 8.5,11A1.5,1.5 0 0,0 10,9.5A1.5,1.5 0 0,0 8.5,8M15.5,8A1.5,1.5 0 0,0 14,9.5A1.5,1.5 0 0,0 15.5,11A1.5,1.5 0 0,0 17,9.5A1.5,1.5 0 0,0 15.5,8M12,17.5C14.33,17.5 16.31,16.04 17.11,14H6.89C7.69,16.04 9.67,17.5 12,17.5Z",
-  "emoticon-neutral":
-    "M9,14H15V16H9V14M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M8.5,8A1.5,1.5 0 0,1 10,9.5A1.5,1.5 0 0,1 8.5,11A1.5,1.5 0 0,1 7,9.5A1.5,1.5 0 0,1 8.5,8M15.5,8A1.5,1.5 0 0,1 17,9.5A1.5,1.5 0 0,1 15.5,11A1.5,1.5 0 0,1 14,9.5A1.5,1.5 0 0,1 15.5,8Z",
-  "emoticon-sad":
-    "M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M8.5,8A1.5,1.5 0 0,0 7,9.5A1.5,1.5 0 0,0 8.5,11A1.5,1.5 0 0,0 10,9.5A1.5,1.5 0 0,0 8.5,8M15.5,8A1.5,1.5 0 0,0 14,9.5A1.5,1.5 0 0,0 15.5,11A1.5,1.5 0 0,0 17,9.5A1.5,1.5 0 0,0 15.5,8M12,14C9.67,14 7.69,15.46 6.89,17.5H17.11C16.31,15.46 14.33,14 12,14Z",
   "water-percent":
     "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z",
 };
@@ -240,13 +234,6 @@ class WeatherStationCard extends HTMLElement {
     const baro = this._read(c.pressure_entity);
     const rain = this._read(c.rain_entity);
 
-    const humidNum = parseFloat(inH.value);
-    let face = "emoticon-happy";
-    if (!isNaN(humidNum)) {
-      if (humidNum < 30 || humidNum > 70) face = "emoticon-sad";
-      else if (humidNum < 40 || humidNum > 60) face = "emoticon-neutral";
-    }
-
     this._panel.innerHTML = `
       ${c.title ? `<div class="title">${c.title}</div>` : ""}
       <div class="grid">
@@ -258,7 +245,7 @@ class WeatherStationCard extends HTMLElement {
             <span class="big">${inT.value}</span><span class="unit">${inT.unit}</span>
           </div>
           <div class="sub">
-            ${svgIcon(face, "face")}
+            ${svgIcon("water-percent", "face")}
             <span class="mid">${inH.value}</span><span class="unit sm">%</span>
           </div>
         </div>
@@ -298,9 +285,9 @@ class WeatherStationCard extends HTMLElement {
 
         <!-- BARO + RAIN -->
         <div class="cell metrics">
-          <div class="metric" data-e="${c.pressure_entity}">
-            <span class="tag sm">BARO</span>
-            <div><span class="mid">${baro.value}</span><span class="unit sm">${baro.unit}</span></div>
+          <span class="tag">BARO</span>
+          <div class="metric baroval" data-e="${c.pressure_entity}">
+            <span class="mid">${baro.value}</span><span class="unit sm">${baro.unit}</span>
           </div>
           <div class="metric" data-e="${c.rain_entity}">
             <span class="tag sm">RAIN</span>
@@ -407,15 +394,15 @@ class WeatherStationCard extends HTMLElement {
       .cspeed{ fill:var(--wsc-ink); font-size:20px; font-weight:300; text-anchor:middle; }
       .cunit{ fill:var(--wsc-ink-soft); font-size:8px; font-weight:500; text-anchor:middle; }
 
-      .metrics{ display:flex; flex-direction:column; justify-content:center; gap:clamp(6px,3cqw,12px); padding-top:clamp(14px,5cqw,22px); }
-      .metric{ display:flex; align-items:baseline; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+      .metrics{ display:flex; flex-direction:column; align-items:flex-end; justify-content:flex-start; gap:clamp(10px,5cqw,20px); padding-top:clamp(16px,6cqw,22px); }
+      .metrics > .tag{ right:2px; }
+      .metric{ display:flex; align-items:baseline; gap:6px; justify-content:flex-end; }
       .metric > div{ white-space:nowrap; }
       .metric .mid{ font-size:clamp(12px,6cqw,24px); }
 
-      /* Narrow column: stack Baro/Rain label above value so long numbers fit */
+      /* Narrow column: stack the Rain label above its value so long numbers fit */
       @container (max-width: 330px){
         .metric{ flex-direction:column; align-items:flex-end; gap:0; }
-        .metrics{ gap:8px; }
       }
 
       .tappable{ cursor:pointer; border-radius:10px; transition:background .15s; }
