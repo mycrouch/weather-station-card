@@ -4,9 +4,13 @@ A [Home Assistant](https://www.home-assistant.io/) Lovelace card laid out like a
 
 Three style modes, matching the other cards in this family: **Basic** follows your dashboard theme, **Theme** applies any installed HA theme to just this card, and **Custom** paints a gradient — defaulting to the soft-blue of [sensibo-thermostat-card](https://github.com/mycrouch/sensibo-thermostat-card) so it sits naturally beside it.
 
-![Weather Station Card](images/hero.png)
+![Three styles, selectable in the GUI editor](images/styles.png)
 
-Resizes to fit narrow section columns:
+With an optional 5-day forecast row:
+
+![Weather Station Card with 5-day forecast](images/hero.png)
+
+…and it resizes to fit narrow section columns:
 
 <img src="images/narrow.png" alt="Narrow column" width="300">
 
