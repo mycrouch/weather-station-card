@@ -61,6 +61,9 @@ show_clock: true
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `title` | string | — | Optional title above the panel. |
+| `style` | string | `default` | `default` (follow the dashboard theme), `theme` (apply one installed theme to just this card), or `manual` (custom gradient). |
+| `theme` | string | — | Installed theme name to apply (only when `style: theme`). |
+| `bg_from` / `bg_to` | string | — | Gradient top / bottom hex (only when `style: manual`). |
 | `indoor_temp_entity` | entity | — | Indoor temperature source. |
 | `indoor_temp_attribute` | string | `current_temperature` | Attribute to read (blank = entity state). |
 | `indoor_humidity_entity` | entity | — | Indoor humidity source. |

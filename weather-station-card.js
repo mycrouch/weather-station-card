@@ -2,19 +2,20 @@
  * Weather Station Card
  * A Home Assistant Lovelace card laid out like a home weather console:
  * indoor + outdoor temp/humidity, wind compass, feels-like index, barometer,
- * rain, forecast icon, moon phase and clock.
+ * rain and a forecast icon.
  *
- * Styled with Home Assistant theme variables (like ecovacs-vacuum-card) so it
- * looks native on any dashboard theme — black text & icons on a light theme.
+ * Styled with Home Assistant theme variables (like ecovacs-vacuum-card) with a
+ * per-card style picker: default (follow the dashboard theme), theme (apply one
+ * installed theme to just this card) or manual (custom gradient).
  *
  * Single self-contained vanilla custom element, no build step, no external
- * assets. Weather / moon / comfort glyphs are inline SVG using Material Design
- * Icons paths (Apache 2.0 — pictogrammers.com/library/mdi).
+ * assets. Weather / comfort glyphs are inline SVG using Material Design Icons
+ * paths (Apache 2.0 — pictogrammers.com/library/mdi).
  *
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -69,9 +70,11 @@ const FORECAST_ICON = {
   exceptional: "weather-cloudy",
 };
 
-const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-
 const DEFAULTS = {
+  style: "default", // default | theme | manual
+  theme: "",
+  bg_from: "#e3edf7",
+  bg_to: "#c9dcef",
   indoor_temp_entity: "climate.dining_room_sensibo_living_area",
   indoor_temp_attribute: "current_temperature",
   indoor_humidity_entity: "climate.dining_room_sensibo_living_area",
@@ -85,27 +88,21 @@ const DEFAULTS = {
   pressure_entity: "sensor.ibrisb3665_pressure",
   rain_entity: "sensor.ibrisb3665_precipitation_today",
   forecast_entity: "weather.forecast_home",
-  show_moon: true,
-  show_clock: true,
 };
 
 const svgIcon = (key, cls) =>
   `<svg class="${cls || ""}" viewBox="0 0 24 24"><path d="${MDI[key] || ""}"/></svg>`;
 
-/* Moon phase 0..1 (0=new,0.5=full) from date — Conway approximation. */
-function moonPhase(date) {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  let r = y % 100;
-  r %= 19;
-  if (r > 9) r -= 19;
-  r = ((r * 11) % 30) + m + d;
-  if (m < 3) r += 2;
-  r -= y < 2000 ? 4 : 8.3;
-  r = Math.floor(r + 0.5) % 30;
-  const age = r < 0 ? r + 30 : r; // 0..29
-  return age / 29.53;
+function rgbOf(hex) {
+  let h = (hex || "").replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+/* pick black/white ink for a background colour by luminance */
+function idealInk(hex) {
+  const [r, g, b] = rgbOf(hex);
+  const l = 0.299 * r + 0.587 * g + 0.114 * b;
+  return l > 150 ? "#1a1a1a" : "#ffffff";
 }
 
 /* ===================================================================== */
@@ -113,6 +110,7 @@ class WeatherStationCard extends HTMLElement {
   setConfig(config) {
     this._config = { ...DEFAULTS, ...(config || {}) };
     this._built = false;
+    this._appliedProps = [];
     this.innerHTML = "";
   }
 
@@ -143,10 +141,13 @@ class WeatherStationCard extends HTMLElement {
 
   _stateKey() {
     if (!this._hass) return "";
-    // minute bucket so the clock ticks without thrashing
-    const min = Math.floor(Date.now() / 60000);
+    const dark = this._hass.themes ? this._hass.themes.darkMode : "";
     return (
-      min +
+      this._config.style +
+      "|" +
+      this._config.theme +
+      "|" +
+      dark +
       "|" +
       this._consumed()
         .map((e) => {
@@ -178,6 +179,40 @@ class WeatherStationCard extends HTMLElement {
     this.dispatchEvent(ev);
   }
 
+  /* Apply the per-card style: default (theme-native), theme (installed theme),
+     or manual (custom gradient). Clears any previously applied host props. */
+  _applyStyle() {
+    const host = this._card;
+    (this._appliedProps || []).forEach((p) => host.style.removeProperty(p));
+    this._appliedProps = [];
+    const set = (prop, val) => {
+      host.style.setProperty(prop, val);
+      this._appliedProps.push(prop);
+    };
+    const c = this._config;
+
+    if (c.style === "theme" && c.theme && this._hass.themes && this._hass.themes.themes) {
+      const t = this._hass.themes.themes[c.theme];
+      if (t) {
+        let vars = { ...t };
+        if (t.modes) {
+          const dark = this._hass.themes.darkMode;
+          vars = { ...t, ...(dark ? t.modes.dark : t.modes.light) };
+          delete vars.modes;
+        }
+        Object.entries(vars).forEach(([k, v]) => set("--" + k, v));
+      }
+    } else if (c.style === "manual") {
+      const ink = idealInk(c.bg_from);
+      const light = ink === "#ffffff";
+      set("--wsc-bg", `linear-gradient(180deg, ${c.bg_from}, ${c.bg_to})`);
+      set("--wsc-ink", ink);
+      set("--wsc-ink-soft", light ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.55)");
+      set("--wsc-chip", light ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.05)");
+      set("--wsc-line", light ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.1)");
+    }
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     const c = this._config;
@@ -191,6 +226,8 @@ class WeatherStationCard extends HTMLElement {
       this._built = true;
     }
 
+    this._applyStyle();
+
     const inT = this._read(c.indoor_temp_entity, c.indoor_temp_attribute);
     const inH = this._read(c.indoor_humidity_entity, c.indoor_humidity_attribute);
     const outT = this._read(c.outdoor_temp_entity);
@@ -201,14 +238,6 @@ class WeatherStationCard extends HTMLElement {
     const feels = this._read(c.feels_like_entity);
     const baro = this._read(c.pressure_entity);
     const rain = this._read(c.rain_entity);
-
-    const now = new Date();
-    const hh = now.getHours();
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    const ampm = hh >= 12 ? "PM" : "AM";
-    const h12 = ((hh + 11) % 12) + 1;
-    const dateStr =
-      String(now.getDate()).padStart(2, "0") + "-" + String(now.getMonth() + 1).padStart(2, "0");
 
     const humidNum = parseFloat(inH.value);
     let face = "emoticon-happy";
@@ -278,18 +307,6 @@ class WeatherStationCard extends HTMLElement {
           </div>
         </div>
       </div>
-
-      <!-- BOTTOM BAR -->
-      <div class="statusbar">
-        <span class="dow">${DAYS[now.getDay()]}</span>
-        ${c.show_moon ? this._moon(now) : ""}
-        ${
-          c.show_clock
-            ? `<span class="clock"><span class="ampm">${ampm}</span>${h12}:${mm}</span>
-               <span class="date">${dateStr}</span>`
-            : ""
-        }
-      </div>
     `;
 
     this._panel.querySelectorAll("[data-e]").forEach((el) => {
@@ -333,38 +350,22 @@ class WeatherStationCard extends HTMLElement {
     return svgIcon(key, "fcicon");
   }
 
-  _moon(now) {
-    const p = moonPhase(now); // 0..1
-    const frac = (1 - Math.cos(2 * Math.PI * p)) / 2; // 0 new .. 1 full
-    const waxing = p < 0.5;
-    const r = 8;
-    const off = (1 - frac) * r * (waxing ? 1 : -1);
-    return `
-      <span class="moon">
-        <svg viewBox="0 0 24 24">
-          <defs><clipPath id="mc"><circle cx="12" cy="12" r="${r}"/></clipPath></defs>
-          <circle cx="12" cy="12" r="${r}" class="moondark"/>
-          <circle cx="${(12 + off).toFixed(1)}" cy="12" r="${r}" class="moonlit" clip-path="url(#mc)"/>
-          <circle cx="12" cy="12" r="${r}" class="moonring"/>
-        </svg>
-      </span>`;
-  }
-
   _css() {
     return `
       ha-card.wsc{
         --wsc-ink: var(--primary-text-color, #111);
-        --wsc-ink-soft: var(--secondary-text-color, #555);
+        --wsc-ink-soft: var(--secondary-text-color, #666);
         --wsc-chip: var(--secondary-background-color, #f2f2f2);
         --wsc-line: var(--divider-color, #e0e0e0);
         overflow:hidden;
       }
       .panel{
-        position:relative; padding:14px 16px 0;
+        position:relative; padding:16px 16px 18px;
+        background:var(--wsc-bg, transparent);
         color:var(--wsc-ink);
-        font-family:"Arial Narrow","Roboto Condensed",Helvetica,Arial,sans-serif;
+        font-family: var(--paper-font-body1_-_font-family, Roboto, "Helvetica Neue", Arial, sans-serif);
       }
-      .title{ text-align:center; font-weight:800; letter-spacing:2px; opacity:.7; margin-bottom:4px; }
+      .title{ text-align:center; font-weight:500; letter-spacing:1px; opacity:.7; margin-bottom:4px; }
       .grid{
         display:grid; grid-template-columns:1fr 1.1fr 1fr;
         grid-template-areas:"in wind out" "forecast index metrics";
@@ -375,59 +376,46 @@ class WeatherStationCard extends HTMLElement {
       .out{grid-area:out;text-align:right;} .forecast{grid-area:forecast;}
       .index{grid-area:index;text-align:center;} .metrics{grid-area:metrics;}
       .tag{
-        position:absolute; top:2px; background:var(--wsc-chip); color:var(--wsc-ink);
-        font-weight:800; font-size:11px; letter-spacing:1.5px;
-        padding:2px 8px; border-radius:8px;
+        position:absolute; top:2px; color:var(--wsc-ink-soft);
+        font-weight:600; font-size:11px; letter-spacing:1.5px;
       }
       .out .tag{ right:4px; } .index .tag,.wind .tag{ left:50%; transform:translateX(-50%); }
-      .tag.sm{ font-size:9px; padding:1px 6px; border-radius:6px; position:static; }
-      .reading{ display:flex; align-items:flex-start; line-height:.85; }
+      .tag.sm{ font-size:10px; position:static; }
+      .reading{ display:flex; align-items:flex-start; line-height:.9; }
       .out .reading{ justify-content:flex-end; } .reading.center{ justify-content:center; }
       .big{
-        font-size:58px; font-weight:800; font-style:italic; letter-spacing:-2px;
-        font-variant-numeric:tabular-nums;
+        font-size:56px; font-weight:200; letter-spacing:-1px;
+        font-variant-numeric:tabular-nums; line-height:1;
       }
-      .mid{ font-size:34px; font-weight:800; font-style:italic; font-variant-numeric:tabular-nums; }
-      .unit{ font-size:18px; font-weight:700; margin-top:6px; }
+      .mid{ font-size:30px; font-weight:300; font-variant-numeric:tabular-nums; }
+      .unit{ font-size:17px; font-weight:400; margin-top:6px; color:var(--wsc-ink-soft); }
       .unit.sm{ font-size:13px; }
-      .sub{ display:flex; align-items:center; gap:6px; margin-top:2px; }
+      .sub{ display:flex; align-items:center; gap:6px; margin-top:4px; }
       .out .sub{ justify-content:flex-end; }
-      .face{ width:22px;height:22px;fill:var(--wsc-ink); }
-      .fcicon{ width:74px;height:74px;fill:var(--wsc-ink); display:block; margin:6px auto 0; }
-      .feels{ font-size:11px; font-weight:700; letter-spacing:1px; opacity:.75; margin-top:16px; }
+      .face{ width:20px;height:20px;fill:var(--wsc-ink-soft); }
+      .fcicon{ width:70px;height:70px;fill:var(--wsc-ink); opacity:.85; display:block; margin:6px auto 0; }
+      .feels{ font-size:11px; font-weight:600; letter-spacing:1px; color:var(--wsc-ink-soft); margin-top:16px; }
 
       .compass{ width:118px;height:118px;display:block;margin:6px auto 0; }
-      .cring{ fill:var(--wsc-chip); stroke:var(--wsc-ink); stroke-width:1.4; }
-      .cpt{ fill:var(--wsc-ink); font-size:9px; font-weight:800; text-anchor:middle; dominant-baseline:middle; }
-      .cpt-sm{ font-size:7px; opacity:.6; }
+      .cring{ fill:var(--wsc-chip); stroke:var(--wsc-ink-soft); stroke-width:1; }
+      .cpt{ fill:var(--wsc-ink-soft); font-size:9px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+      .cpt-sm{ font-size:7px; opacity:.7; }
       .carrow{ fill:var(--wsc-ink); }
-      .cavg{ fill:var(--wsc-ink-soft); font-size:7px; font-weight:700; text-anchor:middle; letter-spacing:1px; }
-      .cspeed{ fill:var(--wsc-ink); font-size:20px; font-weight:800; font-style:italic; text-anchor:middle; }
-      .cunit{ fill:var(--wsc-ink-soft); font-size:8px; font-weight:700; text-anchor:middle; }
+      .cavg{ fill:var(--wsc-ink-soft); font-size:7px; font-weight:600; text-anchor:middle; letter-spacing:1px; }
+      .cspeed{ fill:var(--wsc-ink); font-size:20px; font-weight:300; text-anchor:middle; }
+      .cunit{ fill:var(--wsc-ink-soft); font-size:8px; font-weight:500; text-anchor:middle; }
 
-      .metrics{ display:flex; flex-direction:column; justify-content:center; gap:10px; padding-top:22px; }
+      .metrics{ display:flex; flex-direction:column; justify-content:center; gap:12px; padding-top:22px; }
       .metric{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
-      .metric .mid{ font-size:26px; }
+      .metric .mid{ font-size:24px; }
 
-      .statusbar{
-        margin-top:8px; display:flex; align-items:center; gap:14px;
-        padding:8px 16px; background:var(--wsc-chip); border-top:1px solid var(--wsc-line);
-        color:var(--wsc-ink); font-weight:800;
-      }
-      .dow{ font-size:22px; font-style:italic; letter-spacing:1px; }
-      .moon svg{ width:26px;height:26px; display:block; }
-      .moondark{ fill:var(--wsc-ink); } .moonlit{ fill:var(--card-background-color,#fff); } .moonring{ fill:none; stroke:var(--wsc-ink); stroke-width:1; }
-      .clock{ font-size:28px; font-style:italic; font-variant-numeric:tabular-nums; margin-left:auto; }
-      .ampm{ font-size:12px; margin-right:6px; vertical-align:top; }
-      .date{ font-size:22px; font-style:italic; font-variant-numeric:tabular-nums; }
-
-      .tappable{ cursor:pointer; border-radius:8px; transition:background .15s; }
+      .tappable{ cursor:pointer; border-radius:10px; transition:background .15s; }
       .tappable:hover{ background:var(--wsc-chip); }
     `;
   }
 
   getCardSize() {
-    return 5;
+    return 4;
   }
 
   static getConfigElement() {
@@ -458,13 +446,14 @@ class WeatherStationCardEditor extends HTMLElement {
     this._form.data = this._config || DEFAULTS;
     this._form.schema = this._schema();
     this._form.computeLabel = (s) =>
-      s.label ||
-      s.name.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+      s.label || s.name.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
     this._form.addEventListener("value-changed", (ev) => {
       const next = { type: "custom:weather-station-card", ...ev.detail.value };
       if (JSON.stringify(next) === JSON.stringify({ type: "custom:weather-station-card", ...this._config }))
         return;
+      const styleChanged = next.style !== this._config.style;
       this._config = next;
+      if (styleChanged) this._form.schema = this._schema();
       this.dispatchEvent(
         new CustomEvent("config-changed", { detail: { config: next }, bubbles: true, composed: true })
       );
@@ -473,15 +462,53 @@ class WeatherStationCardEditor extends HTMLElement {
   }
 
   _schema() {
+    const cfg = this._config || DEFAULTS;
     const ent = (name, domain, label) => ({
       name,
       label,
       selector: { entity: domain ? { domain } : {} },
     });
     const txt = (name, label) => ({ name, label, selector: { text: {} } });
-    const bool = (name, label) => ({ name, label, selector: { boolean: {} } });
+    const themeNames =
+      this._hass && this._hass.themes && this._hass.themes.themes
+        ? Object.keys(this._hass.themes.themes).sort()
+        : [];
+
+    const styleBlock = [
+      {
+        name: "style",
+        label: "Style",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "default", label: "Default (follow dashboard theme)" },
+              { value: "theme", label: "Theme (pick an installed theme)" },
+              { value: "manual", label: "Manual (custom gradient)" },
+            ],
+          },
+        },
+      },
+    ];
+    if (cfg.style === "theme") {
+      styleBlock.push({
+        name: "theme",
+        label: "Theme",
+        selector: { select: { mode: "dropdown", options: themeNames } },
+      });
+    } else if (cfg.style === "manual") {
+      styleBlock.push({
+        name: "manual",
+        type: "expandable",
+        title: "Manual gradient",
+        flatten: true,
+        schema: [txt("bg_from", "Gradient top (hex)"), txt("bg_to", "Gradient bottom (hex)")],
+      });
+    }
+
     return [
       txt("title", "Title (optional)"),
+      ...styleBlock,
       {
         name: "indoor",
         type: "expandable",
@@ -527,8 +554,6 @@ class WeatherStationCardEditor extends HTMLElement {
           ent("forecast_entity", "weather", "Forecast (weather) entity"),
         ],
       },
-      bool("show_moon", "Show moon phase"),
-      bool("show_clock", "Show clock & date"),
     ];
   }
 }
@@ -541,7 +566,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "weather-station-card",
   name: "Weather Station Card",
-  description: "Weather-console-style card: indoor/outdoor temp & humidity, wind compass, feels-like, baro, rain, forecast, moon & clock. Themed with your HA theme variables.",
+  description: "Weather-console-style card: indoor/outdoor temp & humidity, wind compass, feels-like, baro, rain and forecast. Theme-native with a per-card style picker.",
   preview: true,
   documentationURL: "https://github.com/mycrouch/weather-station-card",
 });
