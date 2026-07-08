@@ -1,8 +1,11 @@
 /*
  * Weather Station Card
- * A skeuomorphic Home Assistant Lovelace card styled after a home LCD weather
- * console (Holman-style): indoor + outdoor temp/humidity, wind compass,
- * feels-like index, barometer, rain, forecast icon, moon phase and clock.
+ * A Home Assistant Lovelace card laid out like a home weather console:
+ * indoor + outdoor temp/humidity, wind compass, feels-like index, barometer,
+ * rain, forecast icon, moon phase and clock.
+ *
+ * Styled with Home Assistant theme variables (like ecovacs-vacuum-card) so it
+ * looks native on any dashboard theme — black text & icons on a light theme.
  *
  * Single self-contained vanilla custom element, no build step, no external
  * assets. Weather / moon / comfort glyphs are inline SVG using Material Design
@@ -11,12 +14,12 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
-  "color:#e7f3fb;background:#12395b;font-weight:700;border-radius:3px 0 0 3px;padding:2px 4px",
-  "color:#12395b;background:#a9d4ec;font-weight:700;border-radius:0 3px 3px 0;padding:2px 4px"
+  "color:#fff;background:#333;font-weight:700;border-radius:3px 0 0 3px;padding:2px 4px",
+  "color:#333;background:#ccc;font-weight:700;border-radius:0 3px 3px 0;padding:2px 4px"
 );
 
 /* ---- MDI icon paths (Apache-2.0, Pictogrammers) ------------------------- */
@@ -45,10 +48,6 @@ const MDI = {
     "M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M8.5,8A1.5,1.5 0 0,0 7,9.5A1.5,1.5 0 0,0 8.5,11A1.5,1.5 0 0,0 10,9.5A1.5,1.5 0 0,0 8.5,8M15.5,8A1.5,1.5 0 0,0 14,9.5A1.5,1.5 0 0,0 15.5,11A1.5,1.5 0 0,0 17,9.5A1.5,1.5 0 0,0 15.5,8M12,14C9.67,14 7.69,15.46 6.89,17.5H17.11C16.31,15.46 14.33,14 12,14Z",
   "water-percent":
     "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z",
-  "home-thermometer":
-    "M12,3L2,12H5V20H10V14H14V20H19V12H22L12,3M15,10.5A1.5,1.5 0 0,1 16.5,9V6.29C16.5,5.03 15.5,4 14.25,4A2.25,2.25 0 0,0 12,6.29V9A1.5,1.5 0 0,1 13.5,10.5A1.5,1.5 0 0,1 12,12A1.5,1.5 0 0,1 10.5,10.5",
-  gauge:
-    "M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,10.5A1.5,1.5 0 0,1 13.5,12A1.5,1.5 0 0,1 12,13.5A1.5,1.5 0 0,1 10.5,12A1.5,1.5 0 0,1 12,10.5M7.5,11A1.5,1.5 0 0,1 9,12.5A1.5,1.5 0 0,1 7.5,14A1.5,1.5 0 0,1 6,12.5A1.5,1.5 0 0,1 7.5,11M16.5,11A1.5,1.5 0 0,1 18,12.5A1.5,1.5 0 0,1 16.5,14A1.5,1.5 0 0,1 15,12.5A1.5,1.5 0 0,1 16.5,11M10.19,6.15L12.87,10.5L11.5,11.87L7.15,9.19C7.7,8 8.75,6.95 10.19,6.15Z",
 };
 
 /* weather.<state>  ->  MDI icon key */
@@ -72,62 +71,7 @@ const FORECAST_ICON = {
 
 const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
-/* ---- LCD backlight palette (shared-palette vivid tones) ----------------- */
-const BACKLIGHTS = {
-  blue: "#1565c0",
-  sky: "#039be5",
-  cyan: "#00838f",
-  teal: "#00695c",
-  emerald: "#00a86b",
-  green: "#2e7d32",
-  amber: "#b28704",
-  orange: "#ef6c00",
-  red: "#e65100",
-  violet: "#673ab7",
-  indigo: "#3f51b5",
-  steel: "#546e7a",
-  slate: "#3a4046",
-};
-
-function mixHex(a, b, t) {
-  const p = (h) => {
-    h = h.replace("#", "");
-    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-  };
-  const [r1, g1, b1] = p(a);
-  const [r2, g2, b2] = p(b);
-  const m = (x, y) => Math.round(x + (y - x) * t).toString(16).padStart(2, "0");
-  return `#${m(r1, r2)}${m(g1, g2)}${m(b1, b2)}`;
-}
-
-function lcdPalette(cfg) {
-  let from, to, ink, soft, barFrom, barTo;
-  if (cfg.style === "manual" && cfg.bg_from && cfg.bg_to) {
-    from = cfg.bg_from;
-    to = cfg.bg_to;
-    ink = cfg.ink_color || mixHex(from, "#000000", 0.72);
-    soft = mixHex(ink, to, 0.4);
-    barFrom = mixHex(from, "#ffffff", 0.4);
-    barTo = from;
-  } else {
-    const vivid = BACKLIGHTS[cfg.style] || BACKLIGHTS.blue;
-    from = mixHex(vivid, "#ffffff", 0.78);
-    to = mixHex(vivid, "#ffffff", 0.55);
-    ink = mixHex(vivid, "#000000", 0.5);
-    soft = mixHex(vivid, "#000000", 0.25);
-    barFrom = mixHex(vivid, "#ffffff", 0.9);
-    barTo = mixHex(vivid, "#ffffff", 0.82);
-  }
-  const bg =
-    "radial-gradient(120% 80% at 30% 0%, rgba(255,255,255,.5), rgba(255,255,255,0) 60%)," +
-    "radial-gradient(90% 60% at 80% 20%, rgba(255,255,255,.4), rgba(255,255,255,0) 55%)," +
-    `linear-gradient(180deg, ${from} 0%, ${to} 100%)`;
-  return { ink, soft, bg, bar: `linear-gradient(180deg, ${barFrom}, ${barTo})` };
-}
-
 const DEFAULTS = {
-  style: "blue",
   indoor_temp_entity: "climate.dining_room_sensibo_living_area",
   indoor_temp_attribute: "current_temperature",
   indoor_humidity_entity: "climate.dining_room_sensibo_living_area",
@@ -246,12 +190,6 @@ class WeatherStationCard extends HTMLElement {
       this._panel = this._card.querySelector(".panel");
       this._built = true;
     }
-
-    const pal = lcdPalette(c);
-    this._card.style.setProperty("--lcd-ink", pal.ink);
-    this._card.style.setProperty("--lcd-ink-soft", pal.soft);
-    this._card.style.setProperty("--lcd-bg", pal.bg);
-    this._card.style.setProperty("--lcd-bar", pal.bar);
 
     const inT = this._read(c.indoor_temp_entity, c.indoor_temp_attribute);
     const inH = this._read(c.indoor_humidity_entity, c.indoor_humidity_attribute);
@@ -397,7 +335,6 @@ class WeatherStationCard extends HTMLElement {
 
   _moon(now) {
     const p = moonPhase(now); // 0..1
-    // Illuminated fraction & waxing/waning for a simple crescent mask.
     const frac = (1 - Math.cos(2 * Math.PI * p)) / 2; // 0 new .. 1 full
     const waxing = p < 0.5;
     const r = 8;
@@ -416,16 +353,15 @@ class WeatherStationCard extends HTMLElement {
   _css() {
     return `
       ha-card.wsc{
-        --lcd-ink:#123a5c; --lcd-ink-soft:#3f6b8e;
-        --lcd-bg:linear-gradient(180deg,#bfe0f2,#9ccbe6);
-        --lcd-bar:linear-gradient(180deg,#eaf4fb,#dcecf7);
-        overflow:hidden; border:none; box-shadow:var(--ha-card-box-shadow, none);
-        border-radius:14px; background:transparent;
+        --wsc-ink: var(--primary-text-color, #111);
+        --wsc-ink-soft: var(--secondary-text-color, #555);
+        --wsc-chip: var(--secondary-background-color, #f2f2f2);
+        --wsc-line: var(--divider-color, #e0e0e0);
+        overflow:hidden;
       }
       .panel{
         position:relative; padding:14px 16px 0;
-        background:var(--lcd-bg);
-        color:var(--lcd-ink);
+        color:var(--wsc-ink);
         font-family:"Arial Narrow","Roboto Condensed",Helvetica,Arial,sans-serif;
       }
       .title{ text-align:center; font-weight:800; letter-spacing:2px; opacity:.7; margin-bottom:4px; }
@@ -439,7 +375,7 @@ class WeatherStationCard extends HTMLElement {
       .out{grid-area:out;text-align:right;} .forecast{grid-area:forecast;}
       .index{grid-area:index;text-align:center;} .metrics{grid-area:metrics;}
       .tag{
-        position:absolute; top:2px; background:var(--lcd-ink); color:#dcecf7;
+        position:absolute; top:2px; background:var(--wsc-chip); color:var(--wsc-ink);
         font-weight:800; font-size:11px; letter-spacing:1.5px;
         padding:2px 8px; border-radius:8px;
       }
@@ -456,18 +392,18 @@ class WeatherStationCard extends HTMLElement {
       .unit.sm{ font-size:13px; }
       .sub{ display:flex; align-items:center; gap:6px; margin-top:2px; }
       .out .sub{ justify-content:flex-end; }
-      .face{ width:22px;height:22px;fill:var(--lcd-ink-soft); }
-      .fcicon{ width:74px;height:74px;fill:var(--lcd-ink); display:block; margin:6px auto 0; }
+      .face{ width:22px;height:22px;fill:var(--wsc-ink); }
+      .fcicon{ width:74px;height:74px;fill:var(--wsc-ink); display:block; margin:6px auto 0; }
       .feels{ font-size:11px; font-weight:700; letter-spacing:1px; opacity:.75; margin-top:16px; }
 
       .compass{ width:118px;height:118px;display:block;margin:6px auto 0; }
-      .cring{ fill:rgba(255,255,255,.18); stroke:var(--lcd-ink); stroke-width:1.4; }
-      .cpt{ fill:var(--lcd-ink); font-size:9px; font-weight:800; text-anchor:middle; dominant-baseline:middle; }
-      .cpt-sm{ font-size:7px; opacity:.7; }
-      .carrow{ fill:var(--lcd-ink); }
-      .cavg{ fill:var(--lcd-ink-soft); font-size:7px; font-weight:700; text-anchor:middle; letter-spacing:1px; }
-      .cspeed{ fill:var(--lcd-ink); font-size:20px; font-weight:800; font-style:italic; text-anchor:middle; }
-      .cunit{ fill:var(--lcd-ink-soft); font-size:8px; font-weight:700; text-anchor:middle; }
+      .cring{ fill:var(--wsc-chip); stroke:var(--wsc-ink); stroke-width:1.4; }
+      .cpt{ fill:var(--wsc-ink); font-size:9px; font-weight:800; text-anchor:middle; dominant-baseline:middle; }
+      .cpt-sm{ font-size:7px; opacity:.6; }
+      .carrow{ fill:var(--wsc-ink); }
+      .cavg{ fill:var(--wsc-ink-soft); font-size:7px; font-weight:700; text-anchor:middle; letter-spacing:1px; }
+      .cspeed{ fill:var(--wsc-ink); font-size:20px; font-weight:800; font-style:italic; text-anchor:middle; }
+      .cunit{ fill:var(--wsc-ink-soft); font-size:8px; font-weight:700; text-anchor:middle; }
 
       .metrics{ display:flex; flex-direction:column; justify-content:center; gap:10px; padding-top:22px; }
       .metric{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
@@ -475,18 +411,18 @@ class WeatherStationCard extends HTMLElement {
 
       .statusbar{
         margin-top:8px; display:flex; align-items:center; gap:14px;
-        padding:8px 16px; background:var(--lcd-bar);
-        color:var(--lcd-ink); font-weight:800;
+        padding:8px 16px; background:var(--wsc-chip); border-top:1px solid var(--wsc-line);
+        color:var(--wsc-ink); font-weight:800;
       }
       .dow{ font-size:22px; font-style:italic; letter-spacing:1px; }
       .moon svg{ width:26px;height:26px; display:block; }
-      .moondark{ fill:#1a2b3c; } .moonlit{ fill:#eaf4fb; } .moonring{ fill:none; stroke:var(--lcd-ink); stroke-width:1; }
+      .moondark{ fill:var(--wsc-ink); } .moonlit{ fill:var(--card-background-color,#fff); } .moonring{ fill:none; stroke:var(--wsc-ink); stroke-width:1; }
       .clock{ font-size:28px; font-style:italic; font-variant-numeric:tabular-nums; margin-left:auto; }
       .ampm{ font-size:12px; margin-right:6px; vertical-align:top; }
       .date{ font-size:22px; font-style:italic; font-variant-numeric:tabular-nums; }
 
       .tappable{ cursor:pointer; border-radius:8px; transition:background .15s; }
-      .tappable:hover{ background:rgba(255,255,255,.25); }
+      .tappable:hover{ background:var(--wsc-chip); }
     `;
   }
 
@@ -523,16 +459,12 @@ class WeatherStationCardEditor extends HTMLElement {
     this._form.schema = this._schema();
     this._form.computeLabel = (s) =>
       s.label ||
-      s.name
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (m) => m.toUpperCase());
+      s.name.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
     this._form.addEventListener("value-changed", (ev) => {
       const next = { type: "custom:weather-station-card", ...ev.detail.value };
       if (JSON.stringify(next) === JSON.stringify({ type: "custom:weather-station-card", ...this._config }))
         return;
-      const styleChanged = next.style !== this._config.style;
       this._config = next;
-      if (styleChanged) this._form.schema = this._schema(); // reveal/hide manual colours
       this.dispatchEvent(
         new CustomEvent("config-changed", { detail: { config: next }, bubbles: true, composed: true })
       );
@@ -541,7 +473,6 @@ class WeatherStationCardEditor extends HTMLElement {
   }
 
   _schema() {
-    const isManual = (this._config || DEFAULTS).style === "manual";
     const ent = (name, domain, label) => ({
       name,
       label,
@@ -549,33 +480,8 @@ class WeatherStationCardEditor extends HTMLElement {
     });
     const txt = (name, label) => ({ name, label, selector: { text: {} } });
     const bool = (name, label) => ({ name, label, selector: { boolean: {} } });
-    const backlightOpts = Object.keys(BACKLIGHTS).map((k) => ({
-      value: k,
-      label: k.charAt(0).toUpperCase() + k.slice(1),
-    }));
-    backlightOpts.push({ value: "manual", label: "Manual (custom gradient)" });
     return [
       txt("title", "Title (optional)"),
-      {
-        name: "style",
-        label: "Backlight / background",
-        selector: { select: { mode: "dropdown", options: backlightOpts } },
-      },
-      ...(isManual
-        ? [
-            {
-              name: "manual",
-              type: "expandable",
-              title: "Manual colours",
-              flatten: true,
-              schema: [
-                { name: "bg_from", label: "Gradient top (hex)", selector: { text: {} } },
-                { name: "bg_to", label: "Gradient bottom (hex)", selector: { text: {} } },
-                { name: "ink_color", label: "Text colour (hex, optional)", selector: { text: {} } },
-              ],
-            },
-          ]
-        : []),
       {
         name: "indoor",
         type: "expandable",
@@ -635,7 +541,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "weather-station-card",
   name: "Weather Station Card",
-  description: "LCD-console-style weather station: indoor/outdoor temp & humidity, wind compass, feels-like, baro, rain, forecast, moon & clock.",
+  description: "Weather-console-style card: indoor/outdoor temp & humidity, wind compass, feels-like, baro, rain, forecast, moon & clock. Themed with your HA theme variables.",
   preview: true,
   documentationURL: "https://github.com/mycrouch/weather-station-card",
 });

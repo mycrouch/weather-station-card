@@ -1,6 +1,10 @@
 # Weather Station Card
 
-A skeuomorphic [Home Assistant](https://www.home-assistant.io/) Lovelace card styled after a home **LCD weather console**. It lays out indoor and outdoor temperature & humidity, a wind compass, feels-like index, barometer, rain, a forecast icon, moon phase and a clock — all on a single glanceable panel, just like the desk unit on your bench.
+A [Home Assistant](https://www.home-assistant.io/) Lovelace card laid out like a home **weather console**: indoor and outdoor temperature & humidity, a wind compass, feels-like index, barometer, rain, a forecast icon, moon phase and a clock — all on a single glanceable panel.
+
+Styled entirely with your Home Assistant theme variables (the same approach as [ecovacs-vacuum-card](https://github.com/mycrouch/ecovacs-vacuum-card)), so it looks native on any dashboard theme — black text and icons on a light theme, light on a dark theme.
+
+![Weather Station Card](images/hero.jpg)
 
 Built as a single self-contained vanilla custom element: no build step, no external assets, all glyphs are inline SVG.
 
@@ -12,7 +16,7 @@ Built as a single self-contained vanilla custom element: no build step, no exter
 - **Forecast icon** — mapped from any `weather.*` entity.
 - **Moon phase & clock** — locally computed moon phase plus a live clock and date; both toggleable.
 - **Any entity, any integration** — every reading is a configurable entity slot. Indoor temp/humidity can read a plain sensor **or an attribute** (e.g. a climate entity's `current_temperature` / `current_humidity`), so it works even when your outdoor integration (Weather Underground, etc.) doesn't expose indoor readings.
-- **Backlight themes** — pick from 13 LCD backlight colours or supply a manual gradient. Text ink adapts automatically.
+- **Theme-native** — no custom colours; the card inherits `--primary-text-color`, `--secondary-background-color`, `--card-background-color` and `--divider-color` from the active theme.
 - **Tap to drill in** — every value opens the entity's more-info dialog.
 - **GUI editor** — full visual configuration, no YAML required.
 
@@ -35,7 +39,6 @@ Add the card from the picker (**Weather Station Card**) and use the visual edito
 
 ```yaml
 type: custom:weather-station-card
-style: blue                 # backlight colour, or "manual"
 indoor_temp_entity: climate.living_area
 indoor_temp_attribute: current_temperature
 indoor_humidity_entity: climate.living_area
@@ -57,9 +60,6 @@ show_clock: true
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `style` | string | `blue` | Backlight colour: `blue`, `sky`, `cyan`, `teal`, `emerald`, `green`, `amber`, `orange`, `red`, `violet`, `indigo`, `steel`, `slate`, or `manual`. |
-| `bg_from` / `bg_to` | string | — | Gradient top/bottom hex (only when `style: manual`). |
-| `ink_color` | string | auto | Text colour hex (only when `style: manual`). |
 | `title` | string | — | Optional title above the panel. |
 | `indoor_temp_entity` | entity | — | Indoor temperature source. |
 | `indoor_temp_attribute` | string | `current_temperature` | Attribute to read (blank = entity state). |
