@@ -15,7 +15,7 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.3.1";
+const VERSION = "1.4.0";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -64,9 +64,13 @@ const FORECAST_ICON = {
   exceptional: "weather-cloudy",
 };
 
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 const DEFAULTS = {
   style: "manual", // default | theme | manual
   theme: "",
+  show_forecast: false,
+  forecast_days: 5,
   bg_from: "#d9ecff", // matches sensibo-thermostat-card pastel "cool" gradient
   bg_to: "#aed4f2",
   indoor_temp_entity: "climate.dining_room_sensibo_living_area",
@@ -110,10 +114,47 @@ class WeatherStationCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._maybeSubscribeForecast();
     const key = this._stateKey();
     if (key === this._lastKey && this._built) return;
     this._lastKey = key;
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._teardownForecast();
+  }
+
+  _teardownForecast() {
+    if (this._fcUnsub) {
+      Promise.resolve(this._fcUnsub).then((u) => typeof u === "function" && u()).catch(() => {});
+      this._fcUnsub = null;
+    }
+  }
+
+  /* Subscribe to the daily forecast via the weather websocket API. Modern HA
+     no longer exposes forecasts as a state attribute. Re-subscribes when the
+     forecast entity or the show_forecast toggle changes. */
+  _maybeSubscribeForecast() {
+    const c = this._config || {};
+    const want = !!(c.show_forecast && c.forecast_entity && this._hass && this._hass.connection);
+    const key = want ? c.forecast_entity : null;
+    if (key === this._fcSubKey) return;
+    this._teardownForecast();
+    this._fcSubKey = key;
+    this._fcData = null;
+    if (!want) return;
+    try {
+      this._fcUnsub = this._hass.connection.subscribeMessage(
+        (msg) => {
+          this._fcData = (msg && msg.forecast) || [];
+          if (this._built) this._render();
+        },
+        { type: "weather/subscribe_forecast", forecast_type: "daily", entity_id: c.forecast_entity }
+      );
+    } catch (e) {
+      this._fcUnsub = null;
+    }
   }
 
   _consumed() {
@@ -295,6 +336,7 @@ class WeatherStationCard extends HTMLElement {
           </div>
         </div>
       </div>
+      ${this._forecastHtml()}
     `;
 
     this._panel.querySelectorAll("[data-e]").forEach((el) => {
@@ -336,6 +378,31 @@ class WeatherStationCard extends HTMLElement {
     const st = this._hass.states[entity];
     const key = st ? FORECAST_ICON[st.state] || "weather-partly-cloudy" : "weather-partly-cloudy";
     return svgIcon(key, "fcicon");
+  }
+
+  _forecastHtml() {
+    const c = this._config;
+    if (!c.show_forecast) return "";
+    const fc = this._fcData;
+    if (!fc || !fc.length) return "";
+    const n = Math.max(1, Math.min(c.forecast_days || 5, fc.length, 7));
+    const cols = fc
+      .slice(0, n)
+      .map((d) => {
+        const dt = new Date(d.datetime);
+        const dow = isNaN(dt.getTime()) ? "" : DOW[dt.getDay()];
+        const icon = FORECAST_ICON[d.condition] || "weather-partly-cloudy";
+        const hi = d.temperature != null ? Math.round(d.temperature) + "°" : "—";
+        const lo = d.templow != null ? Math.round(d.templow) + "°" : "";
+        return `<div class="fcday">
+          <div class="fcdow">${dow}</div>
+          ${svgIcon(icon, "fcdi")}
+          <div class="fchi">${hi}</div>
+          <div class="fclo">${lo}</div>
+        </div>`;
+      })
+      .join("");
+    return `<div class="fcstrip" style="grid-template-columns:repeat(${n},1fr)">${cols}</div>`;
   }
 
   _css() {
@@ -405,6 +472,13 @@ class WeatherStationCard extends HTMLElement {
         .metric{ flex-direction:column; align-items:flex-end; gap:0; }
       }
 
+      .fcstrip{ display:grid; gap:2px; margin-top:clamp(8px,3cqw,14px); padding-top:clamp(8px,3cqw,12px); border-top:1px solid var(--wsc-line); }
+      .fcday{ display:flex; flex-direction:column; align-items:center; gap:clamp(1px,1cqw,3px); min-width:0; }
+      .fcdow{ font-size:clamp(9px,3cqw,13px); font-weight:600; letter-spacing:.5px; color:var(--wsc-ink-soft); }
+      .fcdi{ width:clamp(26px,11cqw,40px); height:auto; fill:var(--wsc-ink); opacity:.85; }
+      .fchi{ font-size:clamp(12px,4.6cqw,18px); font-weight:400; font-variant-numeric:tabular-nums; }
+      .fclo{ font-size:clamp(10px,3.6cqw,14px); color:var(--wsc-ink-soft); font-variant-numeric:tabular-nums; }
+
       .tappable{ cursor:pointer; border-radius:10px; transition:background .15s; }
       .tappable:hover{ background:var(--wsc-chip); }
     `;
@@ -465,6 +539,12 @@ class WeatherStationCardEditor extends HTMLElement {
       selector: { entity: domain ? { domain } : {} },
     });
     const txt = (name, label) => ({ name, label, selector: { text: {} } });
+    const bool = (name, label) => ({ name, label, selector: { boolean: {} } });
+    const num = (name, label, min, max) => ({
+      name,
+      label,
+      selector: { number: { min, max, step: 1, mode: "box" } },
+    });
     const themeNames =
       this._hass && this._hass.themes && this._hass.themes.themes
         ? Object.keys(this._hass.themes.themes).sort()
@@ -548,6 +628,8 @@ class WeatherStationCardEditor extends HTMLElement {
           ent("pressure_entity", "sensor", "Barometric pressure entity"),
           ent("rain_entity", "sensor", "Rain today entity"),
           ent("forecast_entity", "weather", "Forecast (weather) entity"),
+          bool("show_forecast", "Show 5-day forecast row"),
+          num("forecast_days", "Forecast days (1–7)", 1, 7),
         ],
       },
     ];

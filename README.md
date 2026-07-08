@@ -14,6 +14,7 @@ Built as a single self-contained vanilla custom element: no build step, no exter
 - **Wind compass** — cardinal rose with a rotating direction arrow and average wind speed in the centre.
 - **Index, Baro, Rain** — feels-like/heat-index, barometric pressure and rainfall today.
 - **Forecast icon** — mapped from any `weather.*` entity.
+- **Optional 5-day forecast row** — toggle on a daily forecast strip (day, condition icon, high/low) pulled live from the weather entity via the HA forecast websocket API. Configurable number of days (1–7).
 - **Moon phase & clock** — locally computed moon phase plus a live clock and date; both toggleable.
 - **Any entity, any integration** — every reading is a configurable entity slot. Indoor temp/humidity can read a plain sensor **or an attribute** (e.g. a climate entity's `current_temperature` / `current_humidity`), so it works even when your outdoor integration (Weather Underground, etc.) doesn't expose indoor readings.
 - **Theme-native** — no custom colours; the card inherits `--primary-text-color`, `--secondary-background-color`, `--card-background-color` and `--divider-color` from the active theme.
@@ -77,7 +78,9 @@ show_clock: true
 | `feels_like_entity` | entity | — | Feels-like / heat index. |
 | `pressure_entity` | entity | — | Barometric pressure. |
 | `rain_entity` | entity | — | Rainfall today. |
-| `forecast_entity` | entity | — | A `weather.*` entity for the forecast icon. |
+| `forecast_entity` | entity | — | A `weather.*` entity for the forecast icon and the daily forecast row. |
+| `show_forecast` | boolean | `false` | Show the daily forecast strip below the panel. |
+| `forecast_days` | number | `5` | How many days to show in the forecast strip (1–7). |
 | `show_moon` | boolean | `true` | Show the moon-phase glyph. |
 | `show_clock` | boolean | `true` | Show the clock and date. |
 
