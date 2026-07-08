@@ -15,7 +15,7 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -359,9 +359,10 @@ class WeatherStationCard extends HTMLElement {
         --wsc-chip: var(--secondary-background-color, #f2f2f2);
         --wsc-line: var(--divider-color, #e0e0e0);
         overflow:hidden;
+        container-type: inline-size;   /* sizes below scale with the card's own width */
       }
       .panel{
-        position:relative; padding:16px 16px 18px;
+        position:relative; padding: clamp(10px,4cqw,16px) clamp(10px,4cqw,16px) clamp(12px,4.5cqw,18px);
         background:var(--wsc-bg, transparent);
         color:var(--wsc-ink);
         font-family: var(--paper-font-body1_-_font-family, Roboto, "Helvetica Neue", Arial, sans-serif);
@@ -370,34 +371,34 @@ class WeatherStationCard extends HTMLElement {
       .grid{
         display:grid; grid-template-columns:1fr 1.1fr 1fr;
         grid-template-areas:"in wind out" "forecast index metrics";
-        gap:2px 8px;
+        gap:2px clamp(2px,2cqw,8px);
       }
-      .cell{ position:relative; padding:22px 4px 10px; }
+      .cell{ position:relative; padding: clamp(16px,6cqw,22px) 2px 10px; min-width:0; }
       .in{grid-area:in;} .wind{grid-area:wind;text-align:center;}
       .out{grid-area:out;text-align:right;} .forecast{grid-area:forecast;}
       .index{grid-area:index;text-align:center;} .metrics{grid-area:metrics;}
       .tag{
         position:absolute; top:2px; color:var(--wsc-ink-soft);
-        font-weight:600; font-size:11px; letter-spacing:1.5px;
+        font-weight:600; font-size:clamp(8px,2.8cqw,11px); letter-spacing:1.2px; white-space:nowrap;
       }
-      .out .tag{ right:4px; } .index .tag,.wind .tag{ left:50%; transform:translateX(-50%); }
-      .tag.sm{ font-size:10px; position:static; }
+      .out .tag{ right:2px; } .index .tag,.wind .tag{ left:50%; transform:translateX(-50%); }
+      .tag.sm{ font-size:clamp(7px,2.4cqw,10px); position:static; letter-spacing:1px; }
       .reading{ display:flex; align-items:flex-start; line-height:.9; }
       .out .reading{ justify-content:flex-end; } .reading.center{ justify-content:center; }
       .big{
-        font-size:56px; font-weight:200; letter-spacing:-1px;
+        font-size:clamp(20px,13cqw,56px); font-weight:200; letter-spacing:-1px;
         font-variant-numeric:tabular-nums; line-height:1;
       }
-      .mid{ font-size:30px; font-weight:300; font-variant-numeric:tabular-nums; }
-      .unit{ font-size:17px; font-weight:400; margin-top:6px; color:var(--wsc-ink-soft); }
-      .unit.sm{ font-size:13px; }
-      .sub{ display:flex; align-items:center; gap:6px; margin-top:4px; }
+      .mid{ font-size:clamp(13px,7cqw,30px); font-weight:300; font-variant-numeric:tabular-nums; }
+      .unit{ font-size:clamp(10px,4cqw,17px); font-weight:400; margin-top:6px; color:var(--wsc-ink-soft); }
+      .unit.sm{ font-size:clamp(8px,2.6cqw,13px); margin-top:4px; }
+      .sub{ display:flex; align-items:center; gap:5px; margin-top:4px; }
       .out .sub{ justify-content:flex-end; }
-      .face{ width:20px;height:20px;fill:var(--wsc-ink-soft); }
-      .fcicon{ width:70px;height:70px;fill:var(--wsc-ink); opacity:.85; display:block; margin:6px auto 0; }
-      .feels{ font-size:11px; font-weight:600; letter-spacing:1px; color:var(--wsc-ink-soft); margin-top:16px; }
+      .face{ width:clamp(14px,5cqw,20px);height:clamp(14px,5cqw,20px);fill:var(--wsc-ink-soft);flex:none; }
+      .fcicon{ width:clamp(40px,17cqw,70px);height:auto;fill:var(--wsc-ink); opacity:.85; display:block; margin:6px auto 0; }
+      .feels{ font-size:clamp(8px,2.8cqw,11px); font-weight:600; letter-spacing:1px; color:var(--wsc-ink-soft); margin-top:clamp(10px,4cqw,16px); }
 
-      .compass{ width:118px;height:118px;display:block;margin:6px auto 0; }
+      .compass{ width:clamp(74px,30cqw,118px);height:auto;display:block;margin:6px auto 0; }
       .cring{ fill:var(--wsc-chip); stroke:var(--wsc-ink-soft); stroke-width:1; }
       .cpt{ fill:var(--wsc-ink-soft); font-size:9px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
       .cpt-sm{ font-size:7px; opacity:.7; }
@@ -406,9 +407,16 @@ class WeatherStationCard extends HTMLElement {
       .cspeed{ fill:var(--wsc-ink); font-size:20px; font-weight:300; text-anchor:middle; }
       .cunit{ fill:var(--wsc-ink-soft); font-size:8px; font-weight:500; text-anchor:middle; }
 
-      .metrics{ display:flex; flex-direction:column; justify-content:center; gap:12px; padding-top:22px; }
-      .metric{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
-      .metric .mid{ font-size:24px; }
+      .metrics{ display:flex; flex-direction:column; justify-content:center; gap:clamp(6px,3cqw,12px); padding-top:clamp(14px,5cqw,22px); }
+      .metric{ display:flex; align-items:baseline; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+      .metric > div{ white-space:nowrap; }
+      .metric .mid{ font-size:clamp(12px,6cqw,24px); }
+
+      /* Narrow column: stack Baro/Rain label above value so long numbers fit */
+      @container (max-width: 330px){
+        .metric{ flex-direction:column; align-items:flex-end; gap:0; }
+        .metrics{ gap:8px; }
+      }
 
       .tappable{ cursor:pointer; border-radius:10px; transition:background .15s; }
       .tappable:hover{ background:var(--wsc-chip); }
