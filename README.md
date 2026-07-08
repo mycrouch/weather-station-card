@@ -4,7 +4,12 @@ A [Home Assistant](https://www.home-assistant.io/) Lovelace card laid out like a
 
 Three style modes, matching the other cards in this family: **Basic** follows your dashboard theme, **Theme** applies any installed HA theme to just this card, and **Custom** paints a gradient — defaulting to the soft-blue of [sensibo-thermostat-card](https://github.com/mycrouch/sensibo-thermostat-card) so it sits naturally beside it.
 
-![Three styles, selectable in the GUI editor](images/styles.png)
+<p align="center">
+  <img src="images/basic.png" width="32%" alt="Basic style — follows the dashboard theme">
+  <img src="images/theme.png" width="32%" alt="Theme style — an installed gradient theme applied to just this card">
+  <img src="images/custom.png" width="32%" alt="Custom style — soft-blue gradient">
+</p>
+<p align="center"><sub>Three styles, selectable in the GUI editor: <b>Basic</b> (follows your theme) &middot; <b>Theme</b> (any installed theme, e.g. a <a href="https://github.com/mycrouch/gradient-themes">gradient theme</a>) &middot; <b>Custom</b> (gradient) — each shown with the optional 5-day forecast row</sub></p>
 
 Built as a single self-contained vanilla custom element: no build step, no external assets, all glyphs are inline SVG.
 
