@@ -15,7 +15,7 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -67,7 +67,7 @@ const FORECAST_ICON = {
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const DEFAULTS = {
-  style: "manual", // default | theme | manual
+  style: "custom", // basic | theme | custom
   theme: "",
   show_forecast: false,
   forecast_days: 5,
@@ -88,6 +88,14 @@ const DEFAULTS = {
   forecast_entity: "weather.forecast_home",
 };
 
+/* Back-compat: earlier releases named the styles default / manual. */
+function migrateConfig(config) {
+  const c = { ...DEFAULTS, ...(config || {}) };
+  if (c.style === "default") c.style = "basic";
+  else if (c.style === "manual") c.style = "custom";
+  return c;
+}
+
 const svgIcon = (key, cls) =>
   `<svg class="${cls || ""}" viewBox="0 0 24 24"><path d="${MDI[key] || ""}"/></svg>`;
 
@@ -106,7 +114,7 @@ function idealInk(hex) {
 /* ===================================================================== */
 class WeatherStationCard extends HTMLElement {
   setConfig(config) {
-    this._config = { ...DEFAULTS, ...(config || {}) };
+    this._config = migrateConfig(config);
     this._built = false;
     this._appliedProps = [];
     this.innerHTML = "";
@@ -237,7 +245,7 @@ class WeatherStationCard extends HTMLElement {
         }
         Object.entries(vars).forEach(([k, v]) => set("--" + k, v));
       }
-    } else if (c.style === "manual") {
+    } else if (c.style === "custom") {
       // 160deg direction + translucent-white surface to match the pastel
       // treatment of sensibo-thermostat-card / airtouch-card.
       const darkBg = idealInk(c.bg_from) === "#ffffff";
@@ -500,7 +508,7 @@ class WeatherStationCard extends HTMLElement {
 /* ===================================================================== */
 class WeatherStationCardEditor extends HTMLElement {
   setConfig(config) {
-    this._config = { ...DEFAULTS, ...(config || {}) };
+    this._config = migrateConfig(config);
     if (this._form) this._form.data = this._config;
   }
 
@@ -558,9 +566,9 @@ class WeatherStationCardEditor extends HTMLElement {
           select: {
             mode: "dropdown",
             options: [
-              { value: "default", label: "Default (follow dashboard theme)" },
+              { value: "basic", label: "Basic (follow dashboard theme)" },
               { value: "theme", label: "Theme (pick an installed theme)" },
-              { value: "manual", label: "Manual (custom gradient)" },
+              { value: "custom", label: "Custom (gradient)" },
             ],
           },
         },
@@ -572,11 +580,11 @@ class WeatherStationCardEditor extends HTMLElement {
         label: "Theme",
         selector: { select: { mode: "dropdown", options: themeNames } },
       });
-    } else if (cfg.style === "manual") {
+    } else if (cfg.style === "custom") {
       styleBlock.push({
-        name: "manual",
+        name: "custom",
         type: "expandable",
-        title: "Manual gradient",
+        title: "Custom gradient",
         flatten: true,
         schema: [txt("bg_from", "Gradient top (hex)"), txt("bg_to", "Gradient bottom (hex)")],
       });
