@@ -97,14 +97,19 @@ Units are taken from each sensor's `unit_of_measurement`, so °C/°F, km/h vs m/
 - The clock/date use the browser's local time.
 - Moon phase is an approximation (Conway) computed on-device; no sensor required.
 
-## Related projects
+## The mycrouch card collection
 
-| Project | Description |
-|---|---|
-| [airtouch-card](https://github.com/mycrouch/airtouch-card) | State-driven AirTouch AC control card. |
-| [ecovacs-vacuum-card](https://github.com/mycrouch/ecovacs-vacuum-card) | Ecovacs / Deebot vacuum card. |
-| [sensibo-thermostat-card](https://github.com/mycrouch/sensibo-thermostat-card) | Thermostat-style Sensibo AC card. |
-| [gradient-themes](https://github.com/mycrouch/gradient-themes) | Shared gradient theme palette. |
+These Home Assistant Lovelace cards share a common design language — a clean **default** look that inherits your active theme, plus a per-card **theme** picker — so they sit together neatly on one dashboard. Pair any of them with **gradient-themes** for 40 ready-made gradient and pastel backgrounds.
+
+| Project | What it is |
+| --- | --- |
+| [entity-group-card](https://github.com/mycrouch/entity-group-card) | Group any device's entities as a row list or chip grid |
+| [pro-v-weather-card](https://github.com/mycrouch/pro-v-weather-card) | Weather-station console — clock, moon, forecast, UV, solar, wind |
+| **weather-station-card** (this card) | LCD-console weather station with backlight themes |
+| [airtouch-card](https://github.com/mycrouch/airtouch-card) | AirTouch 4/5 AC + zone control |
+| [sensibo-thermostat-card](https://github.com/mycrouch/sensibo-thermostat-card) | Sensibo thermostat with mode-coloured backgrounds |
+| [ecovacs-vacuum-card](https://github.com/mycrouch/ecovacs-vacuum-card) | Ecovacs/Deebot vacuum with area cleaning |
+| [gradient-themes](https://github.com/mycrouch/gradient-themes) | 40 gradient + pastel dashboard themes |
 
 ## License
 
