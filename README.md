@@ -6,14 +6,6 @@ Three style modes, matching the other cards in this family: **Basic** follows yo
 
 ![Three styles, selectable in the GUI editor](images/styles.png)
 
-With an optional 5-day forecast row:
-
-![Weather Station Card with 5-day forecast](images/hero.png)
-
-…and it resizes to fit narrow section columns:
-
-<img src="images/narrow.png" alt="Narrow column" width="300">
-
 Built as a single self-contained vanilla custom element: no build step, no external assets, all glyphs are inline SVG.
 
 ## Features
