@@ -61,9 +61,9 @@ show_clock: true
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `title` | string | — | Optional title above the panel. |
-| `style` | string | `default` | `default` (follow the dashboard theme), `theme` (apply one installed theme to just this card), or `manual` (custom gradient). |
+| `style` | string | `manual` | `manual` (custom gradient — default), `default` (follow the dashboard theme), or `theme` (apply one installed theme to just this card). |
 | `theme` | string | — | Installed theme name to apply (only when `style: theme`). |
-| `bg_from` / `bg_to` | string | — | Gradient top / bottom hex (only when `style: manual`). |
+| `bg_from` / `bg_to` | string | `#d9ecff` / `#aed4f2` | Gradient top / bottom hex (only when `style: manual`). Defaults match the sensibo-thermostat-card pastel "cool" gradient (160° direction). |
 | `indoor_temp_entity` | entity | — | Indoor temperature source. |
 | `indoor_temp_attribute` | string | `current_temperature` | Attribute to read (blank = entity state). |
 | `indoor_humidity_entity` | entity | — | Indoor humidity source. |

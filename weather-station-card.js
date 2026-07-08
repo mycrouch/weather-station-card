@@ -15,7 +15,7 @@
  * Author: Jason Crouch  ·  MIT License
  */
 
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 
 console.info(
   `%c WEATHER-STATION-CARD %c v${VERSION} `,
@@ -71,10 +71,10 @@ const FORECAST_ICON = {
 };
 
 const DEFAULTS = {
-  style: "default", // default | theme | manual
+  style: "manual", // default | theme | manual
   theme: "",
-  bg_from: "#e3edf7",
-  bg_to: "#c9dcef",
+  bg_from: "#d9ecff", // matches sensibo-thermostat-card pastel "cool" gradient
+  bg_to: "#aed4f2",
   indoor_temp_entity: "climate.dining_room_sensibo_living_area",
   indoor_temp_attribute: "current_temperature",
   indoor_humidity_entity: "climate.dining_room_sensibo_living_area",
@@ -203,13 +203,14 @@ class WeatherStationCard extends HTMLElement {
         Object.entries(vars).forEach(([k, v]) => set("--" + k, v));
       }
     } else if (c.style === "manual") {
-      const ink = idealInk(c.bg_from);
-      const light = ink === "#ffffff";
-      set("--wsc-bg", `linear-gradient(180deg, ${c.bg_from}, ${c.bg_to})`);
-      set("--wsc-ink", ink);
-      set("--wsc-ink-soft", light ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.55)");
-      set("--wsc-chip", light ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.05)");
-      set("--wsc-line", light ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.1)");
+      // 160deg direction + translucent-white surface to match the pastel
+      // treatment of sensibo-thermostat-card / airtouch-card.
+      const darkBg = idealInk(c.bg_from) === "#ffffff";
+      set("--wsc-bg", `linear-gradient(160deg, ${c.bg_from}, ${c.bg_to})`);
+      set("--wsc-ink", darkBg ? "#ffffff" : "#2b2d31");
+      set("--wsc-ink-soft", darkBg ? "rgba(255,255,255,.72)" : "rgba(0,0,0,.55)");
+      set("--wsc-chip", darkBg ? "rgba(255,255,255,.14)" : "rgba(255,255,255,.45)");
+      set("--wsc-line", darkBg ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.1)");
     }
   }
 
